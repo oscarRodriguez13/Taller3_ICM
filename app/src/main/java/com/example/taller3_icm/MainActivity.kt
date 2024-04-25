@@ -1,8 +1,10 @@
 package com.example.taller3_icm
 
 import android.content.ContentValues.TAG
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -24,11 +26,18 @@ class MainActivity : AppCompatActivity() {
         val email = editTextTextEmailAddress.text.toString()
         val password = editTextTextPassword.text.toString()
 
+        val registerButton = findViewById<Button>(R.id.register_button)
+
         if (email.isNotEmpty() && password.isNotEmpty()) {
             FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this) { task ->
                     if (task.isSuccessful) {
                         Toast.makeText(this, "Email y contraseña correctos", Toast.LENGTH_SHORT).show()
+                        registerButton.setOnClickListener {
+                            startActivity(Intent(applicationContext, RegistrarUsuarioActivity::class.java).apply {
+                                putExtra("EMAIL", editTextTextEmailAddress.toString())
+                            })
+                        }
                     } else {
                         Toast.makeText(this, "Email y contraseña incorrectos", Toast.LENGTH_SHORT).show()
                     }
@@ -37,6 +46,8 @@ class MainActivity : AppCompatActivity() {
             // Mostrar mensaje de error al usuario
             Toast.makeText(this, "Email y contraseña son requeridos", Toast.LENGTH_SHORT).show()
         }
+
+
 
     }
 }
