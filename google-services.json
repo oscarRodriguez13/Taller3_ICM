@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "494330228735",
+    "firebase_url": "https://pettracker-a8c32-default-rtdb.firebaseio.com",
+    "project_id": "pettracker-a8c32",
+    "storage_bucket": "pettracker-a8c32.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:494330228735:android:067df5560946d56f4941ca",
+        "android_client_info": {
+          "package_name": "com.example.taller3_icm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKmpde4SsdIlWFKjLKoFtW9nFB4GSTcbQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:494330228735:android:03fe23e586808c2e4941ca",
+        "android_client_info": {
+          "package_name": "com.example.tareita"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKmpde4SsdIlWFKjLKoFtW9nFB4GSTcbQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
