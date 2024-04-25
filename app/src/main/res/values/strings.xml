@@ -3,7 +3,7 @@
     <string name="email">Email</string>
     <string name="password">Password</string>
     <string name="forgot_password">¿Olvidaste tu contraseña?</string>
-    <string name="login">Login</string>
+    <string name="login">Iniciar Sesion</string>
     <string name="no_member">¿No tienes cuenta?</string>
-    <string name="register">SingUp</string>
+    <string name="register">Registrarse</string>
 </resources>
