@@ -26,6 +26,8 @@ class RegistrarUsuarioActivity : AppCompatActivity() {
 
         val etName = findViewById<EditText>(R.id.etName)
 
+        val user = "7JUFrrDo1ZgB9LC2fbb0k42lOQa2"
+
         val button = findViewById<Button>(R.id.button)
         button.setOnClickListener {
             val usr1 = Usuario()
