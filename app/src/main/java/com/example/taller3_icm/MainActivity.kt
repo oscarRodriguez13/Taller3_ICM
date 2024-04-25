@@ -28,16 +28,18 @@ class MainActivity : AppCompatActivity() {
 
         val registerButton = findViewById<Button>(R.id.register_button)
 
+        registerButton.setOnClickListener {
+            startActivity(Intent(applicationContext, RegistrarUsuarioActivity::class.java).apply {
+                putExtra("EMAIL", editTextTextEmailAddress.toString())
+            })
+        }
+
         if (email.isNotEmpty() && password.isNotEmpty()) {
             FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this) { task ->
                     if (task.isSuccessful) {
                         Toast.makeText(this, "Email y contraseña correctos", Toast.LENGTH_SHORT).show()
-                        registerButton.setOnClickListener {
-                            startActivity(Intent(applicationContext, RegistrarUsuarioActivity::class.java).apply {
-                                putExtra("EMAIL", editTextTextEmailAddress.toString())
-                            })
-                        }
+
                     } else {
                         Toast.makeText(this, "Email y contraseña incorrectos", Toast.LENGTH_SHORT).show()
                     }
