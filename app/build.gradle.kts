@@ -8,6 +8,7 @@ android {
     namespace = "com.example.taller3_icm"
     compileSdk = 34
 
+
     defaultConfig {
         applicationId = "com.example.taller3_icm"
         minSdk = 24
@@ -34,6 +35,7 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+
 }
 
 dependencies {
