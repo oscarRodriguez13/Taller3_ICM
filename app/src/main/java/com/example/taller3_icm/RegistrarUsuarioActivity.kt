@@ -18,21 +18,22 @@ class RegistrarUsuarioActivity : AppCompatActivity() {
     val PATH_USERS="users/"
     private val database = FirebaseDatabase.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    private lateinit var  myRef:DatabaseReference
+    private lateinit var  myRef : DatabaseReference
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_registrar_usuario)
 
-        val name = findViewById<EditText>(R.id.etName).toString()
+        val etName = findViewById<EditText>(R.id.etName)
 
         val button = findViewById<Button>(R.id.button)
         button.setOnClickListener {
             val usr1 = Usuario()
-            usr1.nombre = name
-            usr1.apellido = "name"
-            usr1.edad = "name"
-            usr1.numeroId = "name"
-            val myRef = database.getReference(PATH_USERS + auth.currentUser!!.uid)
+            usr1.nombre = etName.text.toString()
+            usr1.apellido = etName.text.toString()
+            usr1.edad = etName.text.toString()
+            usr1.numeroId = etName.text.toString()
+            myRef = database.getReference(PATH_USERS + auth.currentUser!!.uid)
             myRef.setValue(usr1)
 
         }
