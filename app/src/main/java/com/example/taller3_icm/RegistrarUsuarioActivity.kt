@@ -43,10 +43,10 @@ class RegistrarUsuarioActivity : AppCompatActivity() {
         myRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 for (singleSnapshot in dataSnapshot.children) {
-                    val myUser = singleSnapshot.getValue(MyUser::class.java)
-                    Log.i("Firebase", "Encontró usuario: " + myUser?.name)
-                    val name = myUser?.name
-                    val age = myUser?.age
+                    val myUser = singleSnapshot.getValue(Usuario::class.java)
+                    Log.i("Firebase", "Encontró usuario: " + myUser?.nombre)
+                    val name = myUser?.nombre
+                    val age = myUser?.edad
                     Toast.makeText(baseContext, "$name: $age", Toast.LENGTH_SHORT).show()
                 }
             }
