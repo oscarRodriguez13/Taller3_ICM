@@ -1,4 +1,4 @@
-<RelativeLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -6,44 +6,67 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="#FFFFFF"
     android:padding="32dp"
-    android:textColor="@android:color/black">
+    android:textColor="@android:color/black"
+    android:orientation="vertical">
 
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        app:srcCompat="@drawable/buscar_persona"
+        android:layout_gravity="center"
+        android:layout_marginTop="80dp"
+     />
 
-    <EditText
+    <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/email_input"
-        android:padding="20dp"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@id/password_input"
-        android:hint="@string/email"
-        android:inputType="textEmailAddress"
-        android:textColor="@color/black"
-        android:drawableStart="@drawable/emailicon"
-        android:drawablePadding="8dp"
-        android:background="@drawable/custom_input"/>
+        android:layout_marginLeft="31dp"
+        android:layout_marginTop="15dp"
+        android:layout_marginRight="31dp"
+        android:hint="Email"
+        android:minHeight="48dp"
+        app:endIconMode="clear_text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
-    <EditText
+        <com.google.android.material.textfield.TextInputEditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textEmailAddress" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+    <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/password_input"
-        android:padding="20dp"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:layout_marginTop="16dp"
-        android:hint="@string/password"
-        android:inputType="textPassword"
-        android:textColor="@color/black"
-        android:drawableStart="@drawable/padlockicon"
-        android:drawablePadding="8dp"
-        android:background="@drawable/custom_input"/>
+        android:layout_marginLeft="31dp"
+        android:layout_marginTop="15dp"
+        android:layout_marginRight="31dp"
+        android:hint="Contraseña"
+        android:minHeight="48dp"
+        app:endIconMode="clear_text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword" />
+    </com.google.android.material.textfield.TextInputLayout>
+
 
     <TextView
         android:id="@+id/tv_passwordRecover"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/forgot_password"
-        android:layout_below="@id/password_input"
-        android:layout_centerHorizontal="true"
         android:layout_marginTop="25dp"
+        android:layout_gravity="center_horizontal"
         android:textColor="@color/black"
         />
 
@@ -52,32 +75,34 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/login"
-        android:layout_below="@id/tv_passwordRecover"
-        android:layout_centerHorizontal="true"
+        android:layout_gravity="center_horizontal"
         android:layout_marginTop="16dp"
         android:textColor="@color/black" />
 
-
-    <TextView
-        android:id="@+id/tv_member"
+    <!-- LinearLayout horizontal para el botón de registro y el texto "sin cuenta" -->
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/no_member"
-        android:layout_below="@id/login_button"
-        android:layout_marginStart="40dp"
-        android:layout_marginTop="130dp"
-        android:textColor="@color/black"/>
+        android:layout_gravity="center_horizontal"
+        android:orientation="horizontal"
+        android:layout_marginTop="50dp">
 
-    <Button
-        android:id="@+id/register_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/register"
-        android:layout_below="@id/login_button"
-        android:layout_marginTop="119dp"
-        android:layout_marginStart="200dp"
-        android:textColor="@color/black" />
+        <!-- Texto "sin cuenta" -->
+        <TextView
+            android:id="@+id/sinCuenta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/no_member"
+            android:textColor="@color/black"
+            android:paddingEnd="10dp"/>
 
+        <!-- Botón de registro -->
+        <Button
+            android:id="@+id/register_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/register"
+            android:textColor="@color/black" />
+    </LinearLayout>
 
-
-</RelativeLayout>
+</LinearLayout>

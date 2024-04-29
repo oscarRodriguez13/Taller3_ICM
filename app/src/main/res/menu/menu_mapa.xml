@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/menuPersonas"
+        android:title="Personas"
+        android:icon="@drawable/baseline_account_circle_24"
+        app:showAsAction="ifRoom"
+        />
+
+    <item
+        android:id="@+id/menuEstado"
+        android:title="Estado"
+        android:icon="@drawable/change_state_icon"
+        app:showAsAction="ifRoom"
+        />
+
+    <item
+        android:id="@+id/menuLogOut"
+        android:icon="@drawable/logout_icon"
+        android:title="LogOut"
+        app:showAsAction="ifRoom"/>
+</menu>

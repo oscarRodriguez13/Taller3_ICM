@@ -36,11 +36,18 @@ android {
         jvmTarget = "1.8"
     }
 
+    buildFeatures {
+        viewBinding = true
+    }
+
 }
 
 dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.8.1"))
     implementation("com.google.firebase:firebase-auth")
+    implementation ("org.osmdroid:osmdroid-android:6.1.14")
+    implementation ("com.google.code.gson:gson:2.8.8")
+    implementation ("com.google.firebase:firebase-storage-ktx")
     implementation ("de.hdodenhof:circleimageview:3.1.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
