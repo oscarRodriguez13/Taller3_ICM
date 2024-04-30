@@ -68,6 +68,7 @@ class MapaActivity : AppCompatActivity(), LocationListener {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.menuLogOut -> {
+                cambiarEstadoUsuario("desconectado")
                 auth.signOut()
                 val intent = Intent(this, MainActivity::class.java)
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -101,6 +102,11 @@ class MapaActivity : AppCompatActivity(), LocationListener {
                 true
             }
             R.id.menuPersonas -> {
+                val intent = Intent(
+                    this,
+                    UsuariosConectadosActivity::class.java
+                )
+                startActivity(intent)
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -109,8 +115,22 @@ class MapaActivity : AppCompatActivity(), LocationListener {
         }
     }
 
+    private fun cambiarEstadoUsuario(estadoNuevo: String) {
+        val currentUser = auth.currentUser
+        currentUser?.let { user ->
+            val uid = user.uid
+            val usuariosRef = FirebaseDatabase.getInstance().getReference("Usuarios")
+            usuariosRef.child(uid).child("estado").setValue(estadoNuevo).addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Toast.makeText(this, "Estado cambiado a $estadoNuevo", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Error al cambiar estado", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
-        private fun cargarLocalizaciones() {
+    private fun cargarLocalizaciones() {
         try {
             val inputStream = assets.open("locations.json")
             val reader = BufferedReader(InputStreamReader(inputStream))

@@ -1,7 +1,3 @@
 package com.example.taller3_icm
 
-public class Usuario {
-    var nombre: String = ""
-    var apellido: String = ""
-    var numeroId: String = ""
-}
+data class Usuario(val image: Int, val nombre:String)
