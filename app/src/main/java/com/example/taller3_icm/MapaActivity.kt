@@ -1,7 +1,6 @@
 package com.example.taller3_icm
 
 import android.Manifest
-
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
@@ -191,6 +190,29 @@ class MapaActivity : AppCompatActivity(), LocationListener {
             mapController.setZoom(15.0)
             mapController.setCenter(currentLocation)
         }
+
+        val currentUser = auth.currentUser
+        currentUser?.let {
+            val uidUsuario = it.uid
+            val estadoUsuarioRef = FirebaseDatabase.getInstance().getReference("Usuarios").child(uidUsuario).child("estado")
+            estadoUsuarioRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val estado = snapshot.getValue(String::class.java)
+                    if (estado == "disponible") {
+                        // Actualizar la ubicación del usuario en la base de datos
+                        val ubicacionUsuarioRef = FirebaseDatabase.getInstance().getReference("Usuarios").child(uidUsuario)
+                        ubicacionUsuarioRef.child("latitud").setValue(location.latitude)
+                        ubicacionUsuarioRef.child("longitud").setValue(location.longitude)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    // Manejar errores de lectura de la base de datos
+                    Toast.makeText(applicationContext, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
+                }
+            })
+        }
+
         marker?.position = currentLocation
         marker?.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
         marker?.title = "Tú"

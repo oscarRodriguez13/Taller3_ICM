@@ -20,6 +20,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -43,7 +44,7 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
     private var mGeocoder: Geocoder? = null
     private var geoPoint: GeoPoint? = null
     private lateinit var osmMap: MapView
-    private var isFirstLocationUpdate = true
+    private lateinit var auth: FirebaseAuth
     private var randomMarker: Marker? = null
     private var latitud: Double? = null
     private var longitud: Double? = null
@@ -66,6 +67,8 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         } else {
             Toast.makeText(this, "No se encontraron datos extras en el Intent", Toast.LENGTH_SHORT).show()
         }
+
+        auth = FirebaseAuth.getInstance()
 
         Configuration.getInstance().userAgentValue = applicationContext.packageName
 
@@ -108,7 +111,6 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         }
     }
 
-
     private fun obtenerReferenciaUbicacionUsuario(uid: String): DatabaseReference {
         return FirebaseDatabase.getInstance().getReference("Usuarios").child(uid)
     }
@@ -120,11 +122,9 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
             override fun onDataChange(snapshot: DataSnapshot) {
                 // Aquí puedes manejar los cambios en la ubicación del usuario
                 // Por ejemplo, actualizar la ubicación en el mapa
-                val latitudString = snapshot.child("latitud").getValue(String::class.java)
-                val longitudString = snapshot.child("longitud").getValue(String::class.java)
+                val latitud = snapshot.child("latitud").getValue(Double::class.java)
+                val longitud = snapshot.child("longitud").getValue(Double::class.java)
 
-                val latitud = latitudString?.toDouble()
-                val longitud = longitudString?.toDouble()
                 actualizarUbicacionEnMapa(latitud, longitud)
             }
 
@@ -192,6 +192,28 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         val mapController: IMapController = osmMap.controller
         mapController.setCenter(geoPoint)
         mapController.setZoom(18.0)
+
+        val currentUser = auth.currentUser
+        currentUser?.let {
+            val uidUsuario = it.uid
+            val estadoUsuarioRef = FirebaseDatabase.getInstance().getReference("Usuarios").child(uidUsuario).child("estado")
+            estadoUsuarioRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val estado = snapshot.getValue(String::class.java)
+                    if (estado == "disponible") {
+                        // Actualizar la ubicación del usuario en la base de datos
+                        val ubicacionUsuarioRef = FirebaseDatabase.getInstance().getReference("Usuarios").child(uidUsuario)
+                        ubicacionUsuarioRef.child("latitud").setValue(location.latitude)
+                        ubicacionUsuarioRef.child("longitud").setValue(location.longitude)
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    // Manejar errores de lectura de la base de datos
+                    Toast.makeText(applicationContext, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
+                }
+            })
+        }
 
         if (marker == null) {
             marker = Marker(osmMap)
