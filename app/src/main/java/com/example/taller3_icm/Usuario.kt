@@ -1,3 +1,3 @@
 package com.example.taller3_icm
 
-data class Usuario(val image: Int, val nombre:String)
+data class Usuario(val uid: String, val image: Int, val nombre: String, val latitud: Double, val longitud: Double)

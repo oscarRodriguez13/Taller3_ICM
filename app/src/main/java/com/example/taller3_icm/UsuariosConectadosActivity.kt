@@ -1,5 +1,7 @@
 package com.example.taller3_icm
 
+import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -28,7 +30,18 @@ class UsuariosConectadosActivity : AppCompatActivity() {
 
         recyclerView = findViewById(R.id.recyclerView)
         usuarios = mutableListOf()
-        adapter = UsuariosAdapter(usuarios)
+        adapter = UsuariosAdapter(usuarios) { usuario ->
+            val intent = Intent(this, UbicacionUsuarioActivity::class.java)
+            val bundle = Bundle().apply {
+                putString("uid", usuario.uid)
+                putInt("image", usuario.image)
+                putString("nombre", usuario.nombre)
+                putDouble("latitud", usuario.latitud)
+                putDouble("longitud", usuario.longitud)
+            }
+            intent.putExtras(bundle)
+            startActivity(intent)
+        }
         recyclerView.adapter = adapter
         recyclerView.layoutManager = LinearLayoutManager(this)
 
@@ -40,13 +53,20 @@ class UsuariosConectadosActivity : AppCompatActivity() {
         val currentUser = FirebaseAuth.getInstance().currentUser
         databaseReference.orderByChild("estado").equalTo("disponible")
             .addValueEventListener(object : ValueEventListener {
+                @SuppressLint("NotifyDataSetChanged")
                 override fun onDataChange(snapshot: DataSnapshot) {
                     usuarios.clear()
-                    snapshot.children.forEach {
-                        val userId = it.key // Suponiendo que cada entrada tiene su UID como clave
-                        val nombre = it.child("nombre").getValue(String::class.java)
-                        if (userId != currentUser?.uid && nombre != null) {
-                            usuarios.add(Usuario(R.drawable.icn_foto_perfil, nombre))
+                    snapshot.children.forEach { dataSnapshot ->
+                        val userId = dataSnapshot.key.toString() // Suponiendo que cada entrada tiene su UID como clave
+                        val nombre = dataSnapshot.child("nombre").getValue(String::class.java)
+                        val latitudString = dataSnapshot.child("latitud").getValue(String::class.java)
+                        val longitudString = dataSnapshot.child("longitud").getValue(String::class.java)
+
+                        val latitud = latitudString?.toDouble()
+                        val longitud = longitudString?.toDouble()
+
+                        if (userId != currentUser?.uid && nombre != null && latitud != null && longitud != null) {
+                            usuarios.add(Usuario(userId, R.drawable.icn_foto_perfil, nombre, latitud, longitud))
                         }
                     }
                     adapter.notifyDataSetChanged()
@@ -57,4 +77,5 @@ class UsuariosConectadosActivity : AppCompatActivity() {
                 }
             })
     }
+
 }
