@@ -9,6 +9,7 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -26,8 +27,12 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.ktx.storage
 import org.osmdroid.config.Configuration
 import java.util.Arrays
+import java.util.concurrent.CountDownLatch
 
 class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
     private lateinit var mFusedLocationProviderClient: FusedLocationProviderClient
@@ -58,7 +63,7 @@ class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
             val intent = Intent(this, UbicacionUsuarioActivity::class.java)
             val bundle = Bundle().apply {
                 putString("uid", usuario.uid)
-                putInt("image", usuario.image)
+                putString("image", usuario.image)
                 putString("nombre", usuario.nombre)
                 putDouble("latitud", usuario.latitud)
                 putDouble("longitud", usuario.longitud)
@@ -111,7 +116,7 @@ class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
                         val longitud = dataSnapshot.child("longitud").getValue(Double::class.java)
 
                         if (userId != currentUser?.uid && nombre != null && latitud != null && longitud != null) {
-                            usuarios.add(Usuario(userId, R.drawable.icn_foto_perfil, nombre, latitud, longitud))
+                            usuarios.add(Usuario(userId, null, nombre, latitud, longitud))
                         }
                     }
                     adapter.notifyDataSetChanged()

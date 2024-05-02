@@ -6,6 +6,10 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import de.hdodenhof.circleimageview.CircleImageView
 
 class UsuariosAdapter(
@@ -19,7 +23,22 @@ class UsuariosAdapter(
         private val button: Button = itemView.findViewById(R.id.button)
 
         fun bind(usuario: Usuario) {
-            profileImage.setImageResource(usuario.image)
+
+            val profileRef = Firebase.storage.reference.child("Usuarios").child(usuario.uid).child("profile")
+
+            profileRef.downloadUrl.addOnSuccessListener { uri ->
+                val profileImageUrl = uri.toString()
+
+                // Cargar la imagen usando Glide
+                Glide.with(itemView.context) // Utiliza el contexto del itemView
+                    .load(profileImageUrl) // Utiliza la URL de la imagen
+                    .apply(RequestOptions().placeholder(R.drawable.icn_foto_perfil)) // Opcional: establece una imagen de marcador de posición mientras se carga la imagen
+                    .into(profileImage)
+
+            }.addOnFailureListener {
+                profileImage.setImageResource(R.drawable.icn_foto_perfil)
+            }
+
             nombre.text = usuario.nombre
 
             // Configurar el evento de clic del botón

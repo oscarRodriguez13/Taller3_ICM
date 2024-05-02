@@ -14,10 +14,12 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
 import android.widget.ImageButton
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
@@ -26,6 +28,9 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
+import de.hdodenhof.circleimageview.CircleImageView
 import org.osmdroid.api.IMapController
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -33,6 +38,11 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.TilesOverlay
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, LocationListener {
 
@@ -44,12 +54,16 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
     private var mGeocoder: Geocoder? = null
     private var geoPoint: GeoPoint? = null
     private lateinit var osmMap: MapView
+    private var distanciaView: TextView? = null
+    private var profileView: CircleImageView? = null
     private lateinit var auth: FirebaseAuth
     private var randomMarker: Marker? = null
+    private var userLocation: GeoPoint? = null
     private var latitud: Double? = null
     private var longitud: Double? = null
     private var nombre: String? = null
-    private var image: Int? = null
+    private var image: String? = null
+    private val RADIUS_OF_EARTH_KM = 6371
     private var uid: String? = null
 
     @SuppressLint("UseCompatLoadingForDrawables")
@@ -60,13 +74,21 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         val intentExtras = intent.extras
         if (intentExtras != null) {
             uid = intentExtras.getString("uid")
-            image = intentExtras.getInt("image")
+            image = intentExtras.getString("image")
             nombre = intentExtras.getString("nombre")
             latitud = intentExtras.getDouble("latitud")
             longitud = intentExtras.getDouble("longitud")
         } else {
             Toast.makeText(this, "No se encontraron datos extras en el Intent", Toast.LENGTH_SHORT).show()
         }
+
+        val nombreView = findViewById<TextView>(R.id.nombre)
+        nombreView.text = nombre
+
+        distanciaView = findViewById(R.id.distancia)
+        profileView = findViewById(R.id.profile_image)
+
+        uid?.let { loadProfileImage(it) }
 
         auth = FirebaseAuth.getInstance()
 
@@ -101,6 +123,37 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
 
     }
 
+    private fun loadProfileImage(userId: String) {
+        val profileRef = Firebase.storage.reference.child("Usuarios").child(userId).child("profile")
+
+        profileRef.downloadUrl.addOnSuccessListener { uri ->
+            val profileImageUrl = uri.toString()
+
+            // Cargar la imagen usando Glide
+            profileView?.let {
+                Glide.with(this)
+                    .load(profileImageUrl)
+                    .placeholder(R.drawable.icn_foto_perfil)
+                    .into(it)
+            }
+        }.addOnFailureListener {
+            profileView!!.setImageResource(R.drawable.icn_foto_perfil)
+        }
+    }
+
+    private fun calcularDistancia(lat1: Double, long1: Double, lat2: Double, long2: Double): String {
+        val latDistance = Math.toRadians(lat1 - lat2)
+        val lngDistance = Math.toRadians(long1 - long2)
+        val a = (sin(latDistance / 2) * sin(latDistance / 2)
+                + cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2))
+                * sin(lngDistance / 2) * sin(lngDistance / 2))
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        val result = RADIUS_OF_EARTH_KM * c
+        val distance = (result * 100.0).roundToInt() / 100.0
+
+        return "Distancia: $distance km"
+    }
+
     private fun actualizarUbicacionEnMapa(latitud: Double?, longitud: Double?) {
         if (latitud != null && longitud != null) {
             val nuevaUbicacion = GeoPoint(latitud, longitud)
@@ -126,6 +179,7 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
                 val longitud = snapshot.child("longitud").getValue(Double::class.java)
 
                 actualizarUbicacionEnMapa(latitud, longitud)
+                distanciaView?.text = calcularDistancia(userLocation!!.latitude, userLocation!!.longitude, randomMarker!!.position.latitude, randomMarker!!.position.longitude)
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -174,7 +228,7 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         super.onResume()
         osmMap.onResume()
         val mapController: IMapController = osmMap.controller
-        mapController.setZoom(18.0)
+        mapController.setZoom(15.0)
         geoPoint?.let {
             mapController.setCenter(startPoint)
         }
@@ -189,9 +243,12 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
 
     override fun onLocationChanged(location: Location) {
         geoPoint = GeoPoint(location.latitude, location.longitude)
+        userLocation = geoPoint
         val mapController: IMapController = osmMap.controller
         mapController.setCenter(geoPoint)
-        mapController.setZoom(18.0)
+        mapController.setZoom(15.0)
+
+        distanciaView?.text = calcularDistancia(location.latitude, location.longitude, randomMarker!!.position.latitude, randomMarker!!.position.longitude)
 
         val currentUser = auth.currentUser
         currentUser?.let {
@@ -280,7 +337,7 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         marker?.let {
             val mapController: IMapController = osmMap.controller
             mapController.setCenter(marker!!.position)
-            mapController.setZoom(18.0)
+            mapController.setZoom(15.0)
         } ?: run {
             Toast.makeText(this, "Ubicación no disponible", Toast.LENGTH_SHORT).show()
         }
