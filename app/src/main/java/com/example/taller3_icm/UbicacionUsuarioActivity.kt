@@ -13,6 +13,7 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
@@ -117,11 +118,10 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
 
         if (uid != null) {
             configurarListenerUbicacionUsuario(uid!!)
-            configurarListenerEstadoUsuario(uid!!)
         } else {
             Toast.makeText(this, "UID del usuario no encontrado", Toast.LENGTH_SHORT).show()
         }
-
+        configurarListenerEstadoUsuarios()
 
 
     }
@@ -369,6 +369,60 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
 
         // Agrega el listener a la referencia de la ubicación del usuario
         referenciaUbicacionUsuario.addValueEventListener(valueEventListener)
+    }
+
+    private fun configurarListenerEstadoUsuarios() {
+        val referenciaUsuarios = FirebaseDatabase.getInstance().getReference("Usuarios")
+        val estadosActuales: MutableMap<String, String> = mutableMapOf() // Almacena el estado actual de cada usuario
+        val uidUsuarioActual = FirebaseAuth.getInstance().currentUser?.uid // Obtener el UID del usuario actual
+
+        // Obtener los estados actuales de los usuarios
+        referenciaUsuarios.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.children.forEach { dataSnapshot ->
+                    val uid = dataSnapshot.key
+                    val estadoActual = dataSnapshot.child("estado").getValue(String::class.java)
+                    if (uid != null && estadoActual != null) {
+                        estadosActuales[uid] = estadoActual
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Manejar los errores de lectura de la base de datos
+                Toast.makeText(applicationContext, "Error al leer los estados de los usuarios: ${error.message}", Toast.LENGTH_LONG).show()
+            }
+        })
+
+        // Configurar el listener para detectar cambios en los estados de los usuarios
+        referenciaUsuarios.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.children.forEach { dataSnapshot ->
+                    val uid = dataSnapshot.key
+                    val estadoActual = dataSnapshot.child("estado").getValue(String::class.java)
+                    val nombre = dataSnapshot.child("nombre").getValue(String::class.java)
+
+                    // Verificar si el estado actual no es nulo y es diferente al estado anterior
+                    if (uid != null && estadoActual != null && estadoActual != estadosActuales[uid]) {
+                        // Verificar si el usuario que cambia el estado no es el usuario actual
+                        if (uid != uidUsuarioActual) {
+                            Log.i("Cambio Estado", "El usuario $nombre cambió su estado a $estadoActual")
+
+                            // Mostrar el toast correspondiente al cambio de estado
+                            Toast.makeText(applicationContext, "El usuario $nombre cambió su estado a $estadoActual", Toast.LENGTH_LONG).show()
+                        }
+
+                        // Actualizar el estado anterior del usuario
+                        estadosActuales[uid] = estadoActual
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Manejar los errores de lectura de la base de datos
+                Toast.makeText(applicationContext, "Error al leer los estados de los usuarios: ${error.message}", Toast.LENGTH_LONG).show()
+            }
+        })
     }
 
 }

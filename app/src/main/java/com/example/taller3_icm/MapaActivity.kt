@@ -266,13 +266,11 @@ class MapaActivity : AppCompatActivity(), LocationListener {
         }
     }
 
-    private fun obtenerReferenciaUbicacionUsuario(): DatabaseReference {
-        return FirebaseDatabase.getInstance().getReference("Usuarios")
-    }
 
     private fun configurarListenerEstadoUsuarios() {
         val referenciaUsuarios = FirebaseDatabase.getInstance().getReference("Usuarios")
         val estadosActuales: MutableMap<String, String> = mutableMapOf() // Almacena el estado actual de cada usuario
+        val uidUsuarioActual = FirebaseAuth.getInstance().currentUser?.uid // Obtener el UID del usuario actual
 
         // Obtener los estados actuales de los usuarios
         referenciaUsuarios.addListenerForSingleValueEvent(object : ValueEventListener {
@@ -302,10 +300,13 @@ class MapaActivity : AppCompatActivity(), LocationListener {
 
                     // Verificar si el estado actual no es nulo y es diferente al estado anterior
                     if (uid != null && estadoActual != null && estadoActual != estadosActuales[uid]) {
-                        Log.i("Cambio Estado", "El usuario $nombre cambió su estado a $estadoActual")
+                        // Verificar si el usuario que cambia el estado no es el usuario actual
+                        if (uid != uidUsuarioActual) {
+                            Log.i("Cambio Estado", "El usuario $nombre cambió su estado a $estadoActual")
 
-                        // Mostrar el toast correspondiente al cambio de estado
-                        Toast.makeText(applicationContext, "El usuario $nombre cambió su estado a $estadoActual", Toast.LENGTH_LONG).show()
+                            // Mostrar el toast correspondiente al cambio de estado
+                            Toast.makeText(applicationContext, "El usuario $nombre cambió su estado a $estadoActual", Toast.LENGTH_LONG).show()
+                        }
 
                         // Actualizar el estado anterior del usuario
                         estadosActuales[uid] = estadoActual
