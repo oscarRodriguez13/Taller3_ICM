@@ -9,9 +9,7 @@
     tools:context=".RegistrarUsuarioActivity"
     android:orientation="vertical">
 
-    <include
-        android:id="@+id/include_top_bar"
-        layout="@layout/top_bar_goback" />
+
 
     <ScrollView
         android:layout_width="match_parent"

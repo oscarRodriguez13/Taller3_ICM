@@ -37,6 +37,8 @@ import java.util.concurrent.CountDownLatch
 
 class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
     private lateinit var mFusedLocationProviderClient: FusedLocationProviderClient
+    private var childEventListener: ChildEventListener? = null
+
     private lateinit var locationManager: LocationManager
     private lateinit var recyclerView: RecyclerView
     private lateinit var usuarios: MutableList<Usuario>
@@ -77,7 +79,6 @@ class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
 
         cargarUsuariosDisponibles()
 
-        //configurarListenerEstadoUsuarios()
     }
 
     private fun handlePermissions() {
@@ -149,7 +150,7 @@ class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
 
                 override fun onCancelled(error: DatabaseError) {
                     // Manejar errores de lectura de la base de datos
-                    Toast.makeText(applicationContext, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@UsuariosConectadosActivity, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
                 }
             })
         }
@@ -158,21 +159,30 @@ class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
     private fun obtenerReferenciaUbicacionUsuario(): DatabaseReference {
         return FirebaseDatabase.getInstance().getReference("Usuarios")
     }
-
     private fun configurarListenerEstadoUsuarios() {
+        // Eliminar el listener anterior si existe
+        childEventListener?.let {
+            obtenerReferenciaUbicacionUsuario().removeEventListener(it)
+        }
+
         val referenciaUbicacionUsuario = obtenerReferenciaUbicacionUsuario()
         val estadosAnteriores = mutableMapOf<String, String?>()
 
-        val childEventListener = object : ChildEventListener {
+        val uidActual = auth.currentUser?.uid // Obtener el UID del usuario actual
+
+        childEventListener = object : ChildEventListener {
             override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
                 val uid = snapshot.key ?: return
                 val nombre = snapshot.child("nombre").getValue(String::class.java)
                 val apellido = snapshot.child("apellido").getValue(String::class.java)
                 val estadoActual = snapshot.child("estado").getValue(String::class.java)
 
-                // Comparar el estado actual con el almacenado anteriormente
-                if (estadoActual != null && estadoActual != estadosAnteriores[uid]) {
-                    Toast.makeText(applicationContext, "Usuario : $nombre $apellido cambió su estado a $estadoActual", Toast.LENGTH_LONG).show()
+                // Verificar si el usuario que cambió su estado no es el usuario actual
+                if (uid != uidActual && estadoActual != estadosAnteriores[uid]) {
+                    // Comparar el estado actual con el almacenado anteriormente
+                    // Verificar si el cambio de estado proviene del menúEstado
+                    println("Se muestra el toast");
+                    Toast.makeText(this@UsuariosConectadosActivity, "Usuario : $nombre $apellido cambió su estado a $estadoActual", Toast.LENGTH_LONG).show()
                     estadosAnteriores[uid] = estadoActual // Actualizar el mapa con el nuevo estado
                 }
             }
@@ -200,9 +210,23 @@ class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
             }
         }
 
-        referenciaUbicacionUsuario.addChildEventListener(childEventListener)
-
+        referenciaUbicacionUsuario.addChildEventListener(childEventListener!!)
     }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d("MapaActivity", "onResume()")
+        configurarListenerEstadoUsuarios()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.d("MapaActivity", "onPause()")
+        childEventListener?.let {
+            obtenerReferenciaUbicacionUsuario().removeEventListener(it)
+        }
+    }
+
 
 
 

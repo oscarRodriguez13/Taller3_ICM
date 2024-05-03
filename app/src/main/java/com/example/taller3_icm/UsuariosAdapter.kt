@@ -1,5 +1,6 @@
 package com.example.taller3_icm
 
+import android.app.Activity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,11 +30,16 @@ class UsuariosAdapter(
             profileRef.downloadUrl.addOnSuccessListener { uri ->
                 val profileImageUrl = uri.toString()
 
-                // Cargar la imagen usando Glide
-                Glide.with(itemView.context) // Utiliza el contexto del itemView
-                    .load(profileImageUrl) // Utiliza la URL de la imagen
-                    .apply(RequestOptions().placeholder(R.drawable.icn_foto_perfil)) // Opcional: establece una imagen de marcador de posición mientras se carga la imagen
-                    .into(profileImage)
+                val activityContext = (itemView.context as? Activity)
+                activityContext?.let { activity ->
+                    if (!activity.isDestroyed && !activity.isFinishing) {
+                        // Cargar la imagen usando Glide
+                        Glide.with(itemView.context) // Utiliza el contexto del itemView
+                            .load(profileImageUrl) // Utiliza la URL de la imagen
+                            .apply(RequestOptions().placeholder(R.drawable.icn_foto_perfil)) // Opcional: establece una imagen de marcador de posición mientras se carga la imagen
+                            .into(profileImage)
+                    }
+                }
 
             }.addOnFailureListener {
                 profileImage.setImageResource(R.drawable.icn_foto_perfil)

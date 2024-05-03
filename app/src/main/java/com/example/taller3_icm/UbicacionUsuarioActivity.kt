@@ -24,6 +24,7 @@ import com.bumptech.glide.Glide
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -48,6 +49,8 @@ import kotlin.math.sqrt
 class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, LocationListener {
 
     private lateinit var mFusedLocationProviderClient: FusedLocationProviderClient
+    private val estadosActuales: MutableMap<String, String> = mutableMapOf()
+
     private var sensorManager: SensorManager? = null
     private lateinit var locationManager: LocationManager
     private var lightSensor: Sensor? = null
@@ -61,6 +64,7 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
     private var randomMarker: Marker? = null
     private var userLocation: GeoPoint? = null
     private var latitud: Double? = null
+    private var childEventListener: ChildEventListener? = null
     private var longitud: Double? = null
     private var nombre: String? = null
     private var image: String? = null
@@ -80,7 +84,8 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
             latitud = intentExtras.getDouble("latitud")
             longitud = intentExtras.getDouble("longitud")
         } else {
-            Toast.makeText(this, "No se encontraron datos extras en el Intent", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "No se encontraron datos extras en el Intent", Toast.LENGTH_SHORT)
+                .show()
         }
 
         val nombreView = findViewById<TextView>(R.id.nombre)
@@ -121,8 +126,7 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         } else {
             Toast.makeText(this, "UID del usuario no encontrado", Toast.LENGTH_SHORT).show()
         }
-        //configurarListenerEstadoUsuarios()
-
+        configurarListenerEstadoUsuarios()
 
     }
 
@@ -144,7 +148,12 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         }
     }
 
-    private fun calcularDistancia(lat1: Double, long1: Double, lat2: Double, long2: Double): String {
+    private fun calcularDistancia(
+        lat1: Double,
+        long1: Double,
+        lat2: Double,
+        long2: Double
+    ): String {
         val latDistance = Math.toRadians(lat1 - lat2)
         val lngDistance = Math.toRadians(long1 - long2)
         val a = (sin(latDistance / 2) * sin(latDistance / 2)
@@ -163,7 +172,8 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
             randomMarker?.position = nuevaUbicacion
             osmMap.invalidate()
         } else {
-            Toast.makeText(this, "No se encontró la ubicación del usuario", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "No se encontró la ubicación del usuario", Toast.LENGTH_SHORT)
+                .show()
         }
     }
 
@@ -182,12 +192,21 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
                 val longitud = snapshot.child("longitud").getValue(Double::class.java)
 
                 actualizarUbicacionEnMapa(latitud, longitud)
-                distanciaView?.text = calcularDistancia(userLocation!!.latitude, userLocation!!.longitude, randomMarker!!.position.latitude, randomMarker!!.position.longitude)
+                distanciaView?.text = calcularDistancia(
+                    userLocation!!.latitude,
+                    userLocation!!.longitude,
+                    randomMarker!!.position.latitude,
+                    randomMarker!!.position.longitude
+                )
             }
 
             override fun onCancelled(error: DatabaseError) {
                 // Maneja los errores de lectura de la base de datos
-                Toast.makeText(applicationContext, "Error al leer la ubicación del usuario: ${error.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    applicationContext,
+                    "Error al leer la ubicación del usuario: ${error.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
 
@@ -205,13 +224,16 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
                     onLocationChanged(location)
                 }
             }
+
             ActivityCompat.shouldShowRequestPermissionRationale(
-                this, android.Manifest.permission.ACCESS_FINE_LOCATION) -> {
+                this, android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) -> {
                 requestPermissions(
                     arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
                     Datos.MY_PERMISSION_REQUEST_LOCATION
                 )
             }
+
             else -> {
                 requestPermissions(
                     arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
@@ -235,6 +257,8 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         geoPoint?.let {
             mapController.setCenter(startPoint)
         }
+        configurarListenerEstadoUsuarios()
+
     }
 
     override fun onPause() {
@@ -242,6 +266,9 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         osmMap.onPause()
         sensorManager?.unregisterListener(this)
         locationManager.removeUpdates(this)
+        childEventListener?.let {
+            obtenerReferenciaUbicacionUsuario().removeEventListener(it)
+        }
     }
 
     override fun onLocationChanged(location: Location) {
@@ -251,18 +278,27 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         mapController.setCenter(geoPoint)
         mapController.setZoom(15.0)
 
-        distanciaView?.text = calcularDistancia(location.latitude, location.longitude, randomMarker!!.position.latitude, randomMarker!!.position.longitude)
+        distanciaView?.text = calcularDistancia(
+            location.latitude,
+            location.longitude,
+            randomMarker!!.position.latitude,
+            randomMarker!!.position.longitude
+        )
 
         val currentUser = auth.currentUser
         currentUser?.let {
             val uidUsuario = it.uid
-            val estadoUsuarioRef = FirebaseDatabase.getInstance().getReference("Usuarios").child(uidUsuario).child("estado")
+            val estadoUsuarioRef =
+                FirebaseDatabase.getInstance().getReference("Usuarios").child(uidUsuario)
+                    .child("estado")
             estadoUsuarioRef.addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val estado = snapshot.getValue(String::class.java)
                     if (estado == "disponible") {
                         // Actualizar la ubicación del usuario en la base de datos
-                        val ubicacionUsuarioRef = FirebaseDatabase.getInstance().getReference("Usuarios").child(uidUsuario)
+                        val ubicacionUsuarioRef =
+                            FirebaseDatabase.getInstance().getReference("Usuarios")
+                                .child(uidUsuario)
                         ubicacionUsuarioRef.child("latitud").setValue(location.latitude)
                         ubicacionUsuarioRef.child("longitud").setValue(location.longitude)
                     }
@@ -270,7 +306,11 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
 
                 override fun onCancelled(error: DatabaseError) {
                     // Manejar errores de lectura de la base de datos
-                    Toast.makeText(applicationContext, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        applicationContext,
+                        "Error al leer el estado del usuario: ${error.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             })
         }
@@ -346,83 +386,78 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         }
     }
 
-    private fun configurarListenerEstadoUsuario(uid: String) {
-        val referenciaUbicacionUsuario = obtenerReferenciaUbicacionUsuario(uid)
 
-        val valueEventListener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                // Aquí puedes manejar los cambios en la ubicación del usuario
-                // Por ejemplo, actualizar la ubicación en el mapa
-                val estado = snapshot.child("estado").getValue(String::class.java)
+    private fun configurarListenerEstadoUsuarios() {
+        // Eliminar el listener anterior si existe
+        childEventListener?.let {
+            obtenerReferenciaUbicacionUsuario().removeEventListener(it)
+        }
+
+        val referenciaUbicacionUsuario = obtenerReferenciaUbicacionUsuario()
+        val estadosAnteriores = mutableMapOf<String, String?>()
+
+        val uidActual = auth.currentUser?.uid // Obtener el UID del usuario actual
+
+        childEventListener = object : ChildEventListener {
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                val uid = snapshot.key ?: return
                 val nombre = snapshot.child("nombre").getValue(String::class.java)
+                println("Nombre $nombre")
+                val apellido = snapshot.child("apellido").getValue(String::class.java)
+                println("Apellido $apellido")
 
-                if(estado == "disponible"){
-                    Toast.makeText(applicationContext, "El usuario ${nombre} acaba de conectarse", Toast.LENGTH_LONG).show()
+                val estadoActual = snapshot.child("estado").getValue(String::class.java)
+                println("Estado actual $estadoActual")
+
+                println("uid $uid")
+
+                println("uidactual $uidActual")
+
+                println("estado actual $estadoActual")
+                println("estados anteriores ${estadosAnteriores[uid]}")
+
+
+
+
+
+                // Verificar si el usuario que cambió su estado no es el usuario actual
+                if (estadoActual != estadosAnteriores[uid] && uid != uidActual) {
+                    // Comparar el estado actual con el almacenado anteriormente
+                    // Verificar si el cambio de estado proviene del menúEstado
+                    println("Se muestra el toast");
+                    Toast.makeText(this@UbicacionUsuarioActivity, "Usuario : $nombre $apellido cambió su estado a $estadoActual", Toast.LENGTH_LONG).show()
+                    estadosAnteriores[uid] = estadoActual // Actualizar el mapa con el nuevo estado
                 }
             }
 
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                val uid = snapshot.key ?: return
+                val estadoInicial = snapshot.child("estado").getValue(String::class.java)
+                // Almacenar el estado inicial al cargar el usuario
+                estadosAnteriores[uid] = estadoInicial
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                val uid = snapshot.key
+                if (uid != null) {
+                    estadosAnteriores.remove(uid) // Eliminar del mapa al eliminar el usuario
+                }
+            }
+
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
+                // Opcionalmente manejar si necesitas hacer algo cuando se mueve un usuario
+            }
+
             override fun onCancelled(error: DatabaseError) {
-                // Maneja los errores de lectura de la base de datos
-                Toast.makeText(applicationContext, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@UbicacionUsuarioActivity, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
             }
         }
 
-        // Agrega el listener a la referencia de la ubicación del usuario
-        referenciaUbicacionUsuario.addValueEventListener(valueEventListener)
+        referenciaUbicacionUsuario.addChildEventListener(childEventListener!!)
     }
 
-    private fun configurarListenerEstadoUsuarios() {
-        val referenciaUsuarios = FirebaseDatabase.getInstance().getReference("Usuarios")
-        val estadosActuales: MutableMap<String, String> = mutableMapOf() // Almacena el estado actual de cada usuario
-        val uidUsuarioActual = FirebaseAuth.getInstance().currentUser?.uid // Obtener el UID del usuario actual
-
-        // Obtener los estados actuales de los usuarios
-        referenciaUsuarios.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                snapshot.children.forEach { dataSnapshot ->
-                    val uid = dataSnapshot.key
-                    val estadoActual = dataSnapshot.child("estado").getValue(String::class.java)
-                    if (uid != null && estadoActual != null) {
-                        estadosActuales[uid] = estadoActual
-                    }
-                }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                // Manejar los errores de lectura de la base de datos
-                Toast.makeText(applicationContext, "Error al leer los estados de los usuarios: ${error.message}", Toast.LENGTH_LONG).show()
-            }
-        })
-
-        // Configurar el listener para detectar cambios en los estados de los usuarios
-        referenciaUsuarios.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                snapshot.children.forEach { dataSnapshot ->
-                    val uid = dataSnapshot.key
-                    val estadoActual = dataSnapshot.child("estado").getValue(String::class.java)
-                    val nombre = dataSnapshot.child("nombre").getValue(String::class.java)
-
-                    // Verificar si el estado actual no es nulo y es diferente al estado anterior
-                    if (uid != null && estadoActual != null && estadoActual != estadosActuales[uid]) {
-                        // Verificar si el usuario que cambia el estado no es el usuario actual
-                        if (uid != uidUsuarioActual && estadoActual == "disponible") {
-                            Log.i("Cambio Estado", "El usuario $nombre cambió su estado a $estadoActual")
-
-                            // Mostrar el toast correspondiente al cambio de estado
-                            Toast.makeText(applicationContext, "El usuario $nombre cambió su estado a $estadoActual", Toast.LENGTH_LONG).show()
-                        }
-
-                        // Actualizar el estado anterior del usuario
-                        estadosActuales[uid] = estadoActual
-                    }
-                }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                // Manejar los errores de lectura de la base de datos
-                Toast.makeText(applicationContext, "Error al leer los estados de los usuarios: ${error.message}", Toast.LENGTH_LONG).show()
-            }
-        })
+    private fun obtenerReferenciaUbicacionUsuario(): DatabaseReference {
+        return FirebaseDatabase.getInstance().getReference("Usuarios")
     }
 
 

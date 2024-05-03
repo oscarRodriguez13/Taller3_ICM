@@ -36,6 +36,7 @@ import java.io.InputStreamReader
 class MapaActivity : AppCompatActivity(), LocationListener {
 
     private lateinit var binding: ActivityMapaBinding
+    private var childEventListener: ChildEventListener? = null
     private lateinit var locationManager: LocationManager
     private lateinit var auth: FirebaseAuth
     private var marker: Marker? = null
@@ -118,8 +119,6 @@ class MapaActivity : AppCompatActivity(), LocationListener {
                 true
             }
             else -> super.onOptionsItemSelected(item)
-
-
         }
     }
 
@@ -197,14 +196,69 @@ class MapaActivity : AppCompatActivity(), LocationListener {
         } else {
             requestLocationPermission()
         }
-
-
+        configurarListenerEstadoUsuarios()
     }
 
     override fun onPause() {
         super.onPause()
         Log.d("MapaActivity", "onPause()")
-        locationManager.removeUpdates(this)
+        childEventListener?.let {
+            obtenerReferenciaUbicacionUsuario().removeEventListener(it)
+        }
+    }
+
+    private fun configurarListenerEstadoUsuarios() {
+        // Eliminar el listener anterior si existe
+        childEventListener?.let {
+            obtenerReferenciaUbicacionUsuario().removeEventListener(it)
+        }
+
+        val referenciaUbicacionUsuario = obtenerReferenciaUbicacionUsuario()
+        val estadosAnteriores = mutableMapOf<String, String?>()
+
+        val uidActual = auth.currentUser?.uid // Obtener el UID del usuario actual
+
+        childEventListener = object : ChildEventListener {
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                val uid = snapshot.key ?: return
+                val nombre = snapshot.child("nombre").getValue(String::class.java)
+                val apellido = snapshot.child("apellido").getValue(String::class.java)
+                val estadoActual = snapshot.child("estado").getValue(String::class.java)
+
+                // Verificar si el usuario que cambió su estado no es el usuario actual
+                if (uid != uidActual && estadoActual != estadosAnteriores[uid]) {
+                    // Comparar el estado actual con el almacenado anteriormente
+                    // Verificar si el cambio de estado proviene del menúEstado
+                    println("Se muestra el toast");
+                    Toast.makeText(this@MapaActivity, "Usuario : $nombre $apellido cambió su estado a $estadoActual", Toast.LENGTH_LONG).show()
+                    estadosAnteriores[uid] = estadoActual // Actualizar el mapa con el nuevo estado
+                }
+            }
+
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                val uid = snapshot.key ?: return
+                val estadoInicial = snapshot.child("estado").getValue(String::class.java)
+                // Almacenar el estado inicial al cargar el usuario
+                estadosAnteriores[uid] = estadoInicial
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                val uid = snapshot.key
+                if (uid != null) {
+                    estadosAnteriores.remove(uid) // Eliminar del mapa al eliminar el usuario
+                }
+            }
+
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
+                // Opcionalmente manejar si necesitas hacer algo cuando se mueve un usuario
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@MapaActivity, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        referenciaUbicacionUsuario.addChildEventListener(childEventListener!!)
     }
 
     override fun onLocationChanged(location: Location) {
@@ -287,50 +341,6 @@ class MapaActivity : AppCompatActivity(), LocationListener {
         return FirebaseDatabase.getInstance().getReference("Usuarios")
     }
 
-    private fun configurarListenerEstadoUsuarios() {
-        val referenciaUbicacionUsuario = obtenerReferenciaUbicacionUsuario()
-        val estadosAnteriores = mutableMapOf<String, String?>()
-
-        val childEventListener = object : ChildEventListener {
-            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-                val uid = snapshot.key ?: return
-                val nombre = snapshot.child("nombre").getValue(String::class.java)
-                val apellido = snapshot.child("apellido").getValue(String::class.java)
-                val estadoActual = snapshot.child("estado").getValue(String::class.java)
-
-                // Comparar el estado actual con el almacenado anteriormente
-                if (estadoActual != null && estadoActual != estadosAnteriores[uid]) {
-                    Toast.makeText(applicationContext, "Usuario : $nombre $apellido cambió su estado a $estadoActual", Toast.LENGTH_LONG).show()
-                    estadosAnteriores[uid] = estadoActual // Actualizar el mapa con el nuevo estado
-                }
-            }
-
-            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                val uid = snapshot.key ?: return
-                val estadoInicial = snapshot.child("estado").getValue(String::class.java)
-                // Almacenar el estado inicial al cargar el usuario
-                estadosAnteriores[uid] = estadoInicial
-            }
-
-            override fun onChildRemoved(snapshot: DataSnapshot) {
-                val uid = snapshot.key
-                if (uid != null) {
-                    estadosAnteriores.remove(uid) // Eliminar del mapa al eliminar el usuario
-                }
-            }
-
-            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
-                // Opcionalmente manejar si necesitas hacer algo cuando se mueve un usuario
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@MapaActivity, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-
-        referenciaUbicacionUsuario.addChildEventListener(childEventListener)
-
-    }
 
 
 
