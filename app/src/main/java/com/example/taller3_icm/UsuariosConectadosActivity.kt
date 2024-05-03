@@ -205,4 +205,5 @@ class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
     }
 
 
+
 }
