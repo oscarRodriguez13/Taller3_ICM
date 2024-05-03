@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -76,7 +77,7 @@ class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
 
         cargarUsuariosDisponibles()
 
-        configurarListenerEstadoUsuarios()
+        //configurarListenerEstadoUsuarios()
     }
 
     private fun handlePermissions() {
@@ -154,58 +155,53 @@ class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
         }
     }
 
+    private fun obtenerReferenciaUbicacionUsuario(): DatabaseReference {
+        return FirebaseDatabase.getInstance().getReference("Usuarios")
+    }
+
     private fun configurarListenerEstadoUsuarios() {
-        val referenciaUsuarios = FirebaseDatabase.getInstance().getReference("Usuarios")
-        val estadosActuales: MutableMap<String, String> = mutableMapOf() // Almacena el estado actual de cada usuario
-        val uidUsuarioActual = FirebaseAuth.getInstance().currentUser?.uid // Obtener el UID del usuario actual
+        val referenciaUbicacionUsuario = obtenerReferenciaUbicacionUsuario()
+        val estadosAnteriores = mutableMapOf<String, String?>()
 
-        // Obtener los estados actuales de los usuarios
-        referenciaUsuarios.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                snapshot.children.forEach { dataSnapshot ->
-                    val uid = dataSnapshot.key
-                    val estadoActual = dataSnapshot.child("estado").getValue(String::class.java)
-                    if (uid != null && estadoActual != null) {
-                        estadosActuales[uid] = estadoActual
-                    }
+        val childEventListener = object : ChildEventListener {
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                val uid = snapshot.key ?: return
+                val nombre = snapshot.child("nombre").getValue(String::class.java)
+                val apellido = snapshot.child("apellido").getValue(String::class.java)
+                val estadoActual = snapshot.child("estado").getValue(String::class.java)
+
+                // Comparar el estado actual con el almacenado anteriormente
+                if (estadoActual != null && estadoActual != estadosAnteriores[uid]) {
+                    Toast.makeText(applicationContext, "Usuario : $nombre $apellido cambió su estado a $estadoActual", Toast.LENGTH_LONG).show()
+                    estadosAnteriores[uid] = estadoActual // Actualizar el mapa con el nuevo estado
                 }
             }
 
-            override fun onCancelled(error: DatabaseError) {
-                // Manejar los errores de lectura de la base de datos
-                Toast.makeText(applicationContext, "Error al leer los estados de los usuarios: ${error.message}", Toast.LENGTH_LONG).show()
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                val uid = snapshot.key ?: return
+                val estadoInicial = snapshot.child("estado").getValue(String::class.java)
+                // Almacenar el estado inicial al cargar el usuario
+                estadosAnteriores[uid] = estadoInicial
             }
-        })
 
-        // Configurar el listener para detectar cambios en los estados de los usuarios
-        referenciaUsuarios.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                snapshot.children.forEach { dataSnapshot ->
-                    val uid = dataSnapshot.key
-                    val estadoActual = dataSnapshot.child("estado").getValue(String::class.java)
-                    val nombre = dataSnapshot.child("nombre").getValue(String::class.java)
-
-                    // Verificar si el estado actual no es nulo y es diferente al estado anterior
-                    if (uid != null && estadoActual != null && estadoActual != estadosActuales[uid]) {
-                        // Verificar si el usuario que cambia el estado no es el usuario actual
-                        if (uid != uidUsuarioActual && estadoActual == "disponible") {
-                            Log.i("Cambio Estado", "El usuario $nombre cambió su estado a $estadoActual")
-
-                            // Mostrar el toast correspondiente al cambio de estado
-                            Toast.makeText(applicationContext, "El usuario $nombre cambió su estado a $estadoActual", Toast.LENGTH_LONG).show()
-                        }
-
-                        // Actualizar el estado anterior del usuario
-                        estadosActuales[uid] = estadoActual
-                    }
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                val uid = snapshot.key
+                if (uid != null) {
+                    estadosAnteriores.remove(uid) // Eliminar del mapa al eliminar el usuario
                 }
             }
 
-            override fun onCancelled(error: DatabaseError) {
-                // Manejar los errores de lectura de la base de datos
-                Toast.makeText(applicationContext, "Error al leer los estados de los usuarios: ${error.message}", Toast.LENGTH_LONG).show()
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
+                // Opcionalmente manejar si necesitas hacer algo cuando se mueve un usuario
             }
-        })
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@UsuariosConectadosActivity, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        referenciaUbicacionUsuario.addChildEventListener(childEventListener)
+
     }
 
 
