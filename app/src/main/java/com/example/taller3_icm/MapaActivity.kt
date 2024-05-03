@@ -3,6 +3,8 @@ package com.example.taller3_icm
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.location.Location
 import android.location.LocationListener
@@ -160,6 +162,22 @@ class MapaActivity : AppCompatActivity(), LocationListener {
                 marker.position = point
                 marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                 marker.title = name
+
+                val customMarkerDrawable = ContextCompat.getDrawable(this, R.drawable.icn_lugar)
+
+                // Escalar la imagen al tamaño predeterminado (48x48 píxeles)
+                val width = 48
+                val height = 48
+                val scaledDrawable = Bitmap.createScaledBitmap(
+                    (customMarkerDrawable as BitmapDrawable).bitmap,
+                    width,
+                    height,
+                    false
+                )
+
+                // Asignar la imagen escalada al marcador
+                marker.icon = BitmapDrawable(resources, scaledDrawable)
+
                 markers.add(marker)
                 binding.osmMap.overlays.add(marker)
             }
@@ -225,8 +243,6 @@ class MapaActivity : AppCompatActivity(), LocationListener {
         marker?.position = currentLocation
         marker?.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
         marker?.title = "Tú"
-        val icon: Drawable? = resources.getDrawable(R.drawable.baseline_person_pin_circle_24, null)
-        marker?.icon = icon
         binding.osmMap.invalidate()
     }
 
