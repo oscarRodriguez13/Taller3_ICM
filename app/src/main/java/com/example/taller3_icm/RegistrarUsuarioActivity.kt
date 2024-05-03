@@ -28,7 +28,6 @@ import org.osmdroid.util.GeoPoint
 class RegistrarUsuarioActivity : AppCompatActivity() , LocationListener {
 
     private lateinit var binding: ActivityRegistrarUsuarioBinding
-    private val locationPermissionRequestCode = 1001
     var auth: FirebaseAuth = Firebase.auth
     private var user: FirebaseUser? = null
     private var photoURI: Uri? = null
@@ -144,8 +143,8 @@ class RegistrarUsuarioActivity : AppCompatActivity() , LocationListener {
                         userData["nombre"] = nombre
                         userData["apellido"] = apellido
                         userData["identificacion"] = identificacion
-                        userData["longitud"] = currentLocation?.longitude.toString()
-                        userData["latitud"] = currentLocation?.latitude.toString()
+                        userData["longitud"] = currentLocation?.longitude as Double
+                        userData["latitud"] = currentLocation?.latitude as Double
                         userData["estado"] = "desconectado"
 
                         ref.setValue(userData)
