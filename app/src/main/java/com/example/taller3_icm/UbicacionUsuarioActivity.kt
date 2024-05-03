@@ -117,9 +117,12 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
 
         if (uid != null) {
             configurarListenerUbicacionUsuario(uid!!)
+            configurarListenerEstadoUsuario(uid!!)
         } else {
             Toast.makeText(this, "UID del usuario no encontrado", Toast.LENGTH_SHORT).show()
         }
+
+
 
     }
 
@@ -343,5 +346,29 @@ class UbicacionUsuarioActivity : AppCompatActivity(), SensorEventListener, Locat
         }
     }
 
+    private fun configurarListenerEstadoUsuario(uid: String) {
+        val referenciaUbicacionUsuario = obtenerReferenciaUbicacionUsuario(uid)
+
+        val valueEventListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // Aquí puedes manejar los cambios en la ubicación del usuario
+                // Por ejemplo, actualizar la ubicación en el mapa
+                val estado = snapshot.child("estado").getValue(String::class.java)
+                val nombre = snapshot.child("nombre").getValue(String::class.java)
+
+                if(estado == "disponible"){
+                    Toast.makeText(applicationContext, "El usuario ${nombre} acaba de conectarse", Toast.LENGTH_LONG).show()
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Maneja los errores de lectura de la base de datos
+                Toast.makeText(applicationContext, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        // Agrega el listener a la referencia de la ubicación del usuario
+        referenciaUbicacionUsuario.addValueEventListener(valueEventListener)
+    }
 
 }

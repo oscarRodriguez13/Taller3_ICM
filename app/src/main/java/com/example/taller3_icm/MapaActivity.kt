@@ -3,6 +3,8 @@ package com.example.taller3_icm
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import android.graphics.drawable.Drawable
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -16,9 +18,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.taller3_icm.databinding.ActivityMapaBinding
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import org.json.JSONObject
@@ -35,6 +39,7 @@ class MapaActivity : AppCompatActivity(), LocationListener {
     private lateinit var auth: FirebaseAuth
     private var marker: Marker? = null
     private var markers: MutableList<Marker> = mutableListOf()
+    private var uid1: String? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,9 +55,12 @@ class MapaActivity : AppCompatActivity(), LocationListener {
 
         binding.osmMap.setMultiTouchControls(true)
 
+
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
 
         cargarLocalizaciones()
+        configurarListenerEstadoUsuarios()
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -172,6 +180,8 @@ class MapaActivity : AppCompatActivity(), LocationListener {
         } else {
             requestLocationPermission()
         }
+
+
     }
 
     override fun onPause() {
@@ -216,6 +226,8 @@ class MapaActivity : AppCompatActivity(), LocationListener {
         marker?.position = currentLocation
         marker?.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
         marker?.title = "Tú"
+        val icon: Drawable? = resources.getDrawable(R.drawable.baseline_person_pin_circle_24, null)
+        marker?.icon = icon
         binding.osmMap.invalidate()
     }
 
@@ -254,6 +266,44 @@ class MapaActivity : AppCompatActivity(), LocationListener {
             }
         }
     }
+
+
+    private fun configurarListenerEstadoUsuarios() {
+        val referenciaUsuarios = FirebaseDatabase.getInstance().getReference("Usuarios")
+        val estadosAnteriores: MutableMap<String, String> = mutableMapOf() // Almacena el estado anterior de cada usuario
+
+        referenciaUsuarios.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.children.forEach { dataSnapshot ->
+                    val uid = dataSnapshot.key
+                    val estadoActual = dataSnapshot.child("estado").getValue(String::class.java)
+
+                    // Verificar si el estado actual no es nulo y es diferente al estado anterior
+                    if (uid != null && estadoActual != null && estadoActual != estadosAnteriores[uid]) {
+                        val nombre = dataSnapshot.child("nombre").getValue(String::class.java)
+                        Log.i("Cambio Estado", "El usuario $nombre cambió su estado a $estadoActual")
+
+                        // Mostrar el toast correspondiente al cambio de estado
+                        if (estadoActual == "disponible") {
+                            Toast.makeText(applicationContext, "El usuario $nombre acaba de conectarse", Toast.LENGTH_LONG).show()
+                        } else if (estadoActual == "desconectado") {
+                            Toast.makeText(applicationContext, "El usuario $nombre acaba de desconectarse", Toast.LENGTH_LONG).show()
+                        }
+
+                        // Actualizar el estado anterior del usuario
+                        estadosAnteriores[uid] = estadoActual
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Manejar los errores de lectura de la base de datos
+                Toast.makeText(applicationContext, "Error al leer los estados de los usuarios: ${error.message}", Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+
 
 
 }

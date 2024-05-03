@@ -75,6 +75,14 @@ class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
         recyclerView.layoutManager = LinearLayoutManager(this)
 
         cargarUsuariosDisponibles()
+
+        val currentUser = auth.currentUser
+        val uid = currentUser?.uid
+        if (uid != null) {
+            configurarListenerEstadoUsuario(uid)
+        } else {
+            Toast.makeText(this, "UID del usuario no encontrado", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun handlePermissions() {
@@ -150,6 +158,35 @@ class UsuariosConectadosActivity : AppCompatActivity(), LocationListener {
                 }
             })
         }
+    }
+
+    private fun configurarListenerEstadoUsuario(uid: String) {
+        val referenciaUbicacionUsuario = obtenerReferenciaUbicacionUsuario(uid)
+
+        val valueEventListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // Aquí puedes manejar los cambios en la ubicación del usuario
+                // Por ejemplo, actualizar la ubicación en el mapa
+                val estado = snapshot.child("estado").getValue(String::class.java)
+                val nombre = snapshot.child("nombre").getValue(String::class.java)
+
+
+                Toast.makeText(applicationContext, "El usuario ${nombre} acaba de conectarse", Toast.LENGTH_LONG).show()
+
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Maneja los errores de lectura de la base de datos
+                Toast.makeText(applicationContext, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        // Agrega el listener a la referencia de la ubicación del usuario
+        referenciaUbicacionUsuario.addValueEventListener(valueEventListener)
+    }
+
+    private fun obtenerReferenciaUbicacionUsuario(uid: String): DatabaseReference {
+        return FirebaseDatabase.getInstance().getReference("Usuarios").child(uid)
     }
 
 }
