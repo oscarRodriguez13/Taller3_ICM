@@ -301,7 +301,7 @@ class MapaActivity : AppCompatActivity(), LocationListener {
                     // Verificar si el estado actual no es nulo y es diferente al estado anterior
                     if (uid != null && estadoActual != null && estadoActual != estadosActuales[uid]) {
                         // Verificar si el usuario que cambia el estado no es el usuario actual
-                        if (uid != uidUsuarioActual) {
+                        if (uid != uidUsuarioActual && estadoActual == "disponible") {
                             Log.i("Cambio Estado", "El usuario $nombre cambió su estado a $estadoActual")
 
                             // Mostrar el toast correspondiente al cambio de estado
@@ -320,6 +320,7 @@ class MapaActivity : AppCompatActivity(), LocationListener {
             }
         })
     }
+
 
 
 }
