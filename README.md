@@ -8,4 +8,4 @@ Este es el repositorio del Taller 3, desarrollado por:
 
 ## Video
 
-Aquí puedes encontrar un video relacionado con el taller: 
+Aquí puedes encontrar un video relacionado con el taller: https://youtu.be/qke8azShVOI
