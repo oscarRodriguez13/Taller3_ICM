@@ -35,9 +35,6 @@ class RegistrarUsuarioActivity : AppCompatActivity() , LocationListener {
     private lateinit var locationManager: LocationManager
     private var currentLocation: GeoPoint? = null
 
-
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
