@@ -271,53 +271,54 @@ class MapaActivity : AppCompatActivity(), LocationListener {
     }
 
     private fun configurarListenerEstadoUsuarios() {
-        val referenciaUbicacionUsuario = obtenerReferenciaUbicacionUsuario()
+        val referenciaUsuarios = FirebaseDatabase.getInstance().getReference("Usuarios")
+        val estadosActuales: MutableMap<String, String> = mutableMapOf() // Almacena el estado actual de cada usuario
 
-        // Bandera para ignorar la primera carga completa de datos
-        var isInitialLoad = true
-
-        val childEventListener = object : ChildEventListener {
-            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-                if (!isInitialLoad) { // Ignora cambios durante la carga inicial
-                    val nombre = snapshot.child("nombre").getValue(String::class.java)
-                    val apellido = snapshot.child("apellido").getValue(String::class.java)
-                    val estado = snapshot.child("estado").getValue(String::class.java)
-
-                    if (estado != null) {
-                        Toast.makeText(applicationContext, "Usuario : $nombre $apellido cambió su estado a $estado", Toast.LENGTH_LONG).show()
+        // Obtener los estados actuales de los usuarios
+        referenciaUsuarios.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.children.forEach { dataSnapshot ->
+                    val uid = dataSnapshot.key
+                    val estadoActual = dataSnapshot.child("estado").getValue(String::class.java)
+                    if (uid != null && estadoActual != null) {
+                        estadosActuales[uid] = estadoActual
                     }
                 }
-            }
-
-            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                if (isInitialLoad) {
-                    // Ignora todos los 'onChildAdded' durante la carga inicial
-                    if (previousChildName == null) {
-                        isInitialLoad = false // Todos los nodos iniciales se han cargado
-                    }
-                }
-            }
-
-            override fun onChildRemoved(snapshot: DataSnapshot) {
-                // Opcionalmente manejar la eliminación de usuarios
-            }
-
-            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
-                // Opcionalmente manejar si necesitas hacer algo cuando se mueve un usuario
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(applicationContext, "Error al leer el estado del usuario: ${error.message}", Toast.LENGTH_LONG).show()
+                // Manejar los errores de lectura de la base de datos
+                Toast.makeText(applicationContext, "Error al leer los estados de los usuarios: ${error.message}", Toast.LENGTH_LONG).show()
             }
-        }
+        })
 
-        // Agrega el listener a la referencia de la ubicación del usuario
-        referenciaUbicacionUsuario.addChildEventListener(childEventListener)
+        // Configurar el listener para detectar cambios en los estados de los usuarios
+        referenciaUsuarios.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.children.forEach { dataSnapshot ->
+                    val uid = dataSnapshot.key
+                    val estadoActual = dataSnapshot.child("estado").getValue(String::class.java)
+                    val nombre = dataSnapshot.child("nombre").getValue(String::class.java)
+
+                    // Verificar si el estado actual no es nulo y es diferente al estado anterior
+                    if (uid != null && estadoActual != null && estadoActual != estadosActuales[uid]) {
+                        Log.i("Cambio Estado", "El usuario $nombre cambió su estado a $estadoActual")
+
+                        // Mostrar el toast correspondiente al cambio de estado
+                        Toast.makeText(applicationContext, "El usuario $nombre cambió su estado a $estadoActual", Toast.LENGTH_LONG).show()
+
+                        // Actualizar el estado anterior del usuario
+                        estadosActuales[uid] = estadoActual
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Manejar los errores de lectura de la base de datos
+                Toast.makeText(applicationContext, "Error al leer los estados de los usuarios: ${error.message}", Toast.LENGTH_LONG).show()
+            }
+        })
     }
-
-
-
-
 
 
 }
